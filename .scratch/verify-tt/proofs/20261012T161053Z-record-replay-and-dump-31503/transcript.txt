@@ -1,0 +1,143 @@
+
+[16:11:02] user/$ env ROC_LEDGER=record:ledgers/crash.ledger ./agenda tasks.txt 
+Agenda at 2026-10-12T16:11:02Z
+00:01  Early thing  done
+[ROC CRASHED] Integer subtraction overflowed
+[ledger] recorded crashed: Integer subtraction overflowed (shared) -> ledgers/crash.ledger
+exit 1
+
+[16:12:00] user/$ ./agenda tasks.txt 
+Agenda at 2026-10-12T16:12:00Z
+00:01  Early thing  done
+16:11  Submit essay draft  done
+23:59  Late thing  in 467 min
+exit 0
+
+[16:12:00] elsewhere/$ ls -A 
+crash.ledger
+exit 0
+
+[16:12:01] elsewhere/$ env -i ROC_LEDGER=replay:crash.ledger crash.ledger/exe 
+Agenda at 2026-10-12T16:11:02Z
+00:01  Early thing  done
+[ROC CRASHED] Integer subtraction overflowed
+[ledger] reproduced: crashed: Integer subtraction overflowed after 4 crossings
+exit 0
+
+[16:12:01] user/$ env ROC_LEDGER=record:ledgers/fine.ledger ./agenda fine.txt 
+Agenda at 2026-10-12T16:12:01Z
+00:01  Early thing  done
+23:59  Late thing  in 466 min
+[ledger] recorded returned 0 (shared) -> ledgers/fine.ledger
+exit 0
+
+[16:12:01] elsewhere/$ env -i ROC_LEDGER=replay:fine.ledger fine.ledger/exe 
+Agenda at 2026-10-12T16:12:01Z
+00:01  Early thing  done
+23:59  Late thing  in 466 min
+[ledger] reproduced: returned 0 after 5 crossings
+exit 0
+
+[16:12:01] user/$ env ROC_LEDGER=replay:ledgers/fine.ledger ./two-questions 
+Agenda at 2026-10-12T16:12:01Z
+00:01  Early thing  done
+23:59  Late thing  in 466 min
+[ledger] reproduced: returned 0 after 5 crossings
+exit 0
+
+[16:12:01] user/$ env ROC_LEDGER_DIR=/Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T161053Z-record-replay-and-dump-31503/user/.ledgers bash -c .\ \"\$1\"\;\ ledgered\ ./agenda\ fine.txt\;\ ledgered\ ./agenda\ fine.txt _ /Users/jonathanbae/repos/tt/.scratch/effect-ledger/prototype-supervisor-wiring/ledger-on.sh 
+Agenda at 2026-10-12T16:12:02Z
+00:01  Early thing  done
+23:59  Late thing  in 466 min
+[ledger] recorded returned 0 (shared) -> /Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T161053Z-record-replay-and-dump-31503/user/.ledgers/agenda-20261012T161201Z-32125-14885.ledger
+Agenda at 2026-10-12T16:12:02Z
+00:01  Early thing  done
+23:59  Late thing  in 466 min
+[ledger] recorded returned 0 (shared) -> /Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T161053Z-record-replay-and-dump-31503/user/.ledgers/agenda-20261012T161202Z-32125-6426.ledger
+exit 0
+
+[16:12:02] user/$ stat -f %l\ %N .ledgers/agenda-20261012T161201Z-32125-14885.ledger/exe .ledgers/agenda-20261012T161202Z-32125-6426.ledger/exe .ledgers/.pins/1000006-2785c4f-b9670-6acd068f.289e7897 
+3 .ledgers/agenda-20261012T161201Z-32125-14885.ledger/exe
+3 .ledgers/agenda-20261012T161202Z-32125-6426.ledger/exe
+3 .ledgers/.pins/1000006-2785c4f-b9670-6acd068f.289e7897
+exit 0
+
+[16:12:11] user/$ python3 /Users/jonathanbae/repos/tt/.scratch/effect-ledger/prototype-supervisor-wiring/drive.py wait:Name\?\,send:Ann\,wait:Age\?\,ctrlc -- env ROC_LEDGER=record:ledgers/ctrlc.ledger ./two-questions 
+Name?
+Ann
+Age?
+^C[ledger] recorded killed by SIGINT during seq 4 (hosted_stdin_line) (shared) -> ledgers/ctrlc.ledger
+<< shell sees: killed by SIGINT >>
+exit 0
+
+[16:12:11] elsewhere/$ env -i ROC_LEDGER=dump:crash.ledger crash.ledger/exe 
+ledger   crash.ledger
+request  5a013492a657f95d993b32ef313aaa42
+service  agenda (basic-cli 0.23.0, pinned shared)
+args     ["./agenda", "tasks.txt"]
+started  2026-10-12T16:11:02.123403Z
+
+ seq         at  crossing
+   1  +316.57ms  hosted_file_read_utf8(UnixBytes("tasks.txt")) -> Ok("00:01 Early thing\n16:11 Submit essay draft\n23:59 Late thing\n")
+   2  +316.79ms  hosted_utc_now() -> Ok(1791821462439960000)  # 2026-10-12T16:11:02.439960Z
+   3  +316.87ms  hosted_stdout_line("Agenda at 2026-10-12T16:11:02Z") -> Ok({})
+   4  +316.94ms  hosted_stdout_line("00:01  Early thing  done") -> Ok({})
+ end  +317.00ms  crashed: Integer subtraction overflowed
+exit 0
+
+[16:12:11] elsewhere/$ env -i ROC_LEDGER=dump:ctrlc.ledger ctrlc.ledger/exe 
+ledger   ctrlc.ledger
+request  aca123e12ea614d85056f445c8c9d996
+service  two-questions (basic-cli 0.23.0, pinned shared)
+args     ["./two-questions"]
+started  2026-10-12T16:12:11.456854Z
+
+ seq         at  crossing
+   1  +295.65ms  hosted_stdout_line("Name?") -> Ok({})
+   2  +295.93ms  hosted_stdin_line() -> Ok("Ann")
+   3  +296.03ms  hosted_stdout_line("Age?") -> Ok({})
+   4             hosted_stdin_line() -> no response: SIGINT
+ end  +296.24ms  killed by SIGINT during seq 4 (hosted_stdin_line)
+exit 0
+
+[16:12:12] elsewhere/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/damage.py torn crash.ledger torn.ledger 
+exit 0
+
+[16:12:12] elsewhere/$ env -i ROC_LEDGER=dump:torn.ledger torn.ledger/exe 
+ledger   torn.ledger
+request  5a013492a657f95d993b32ef313aaa42
+service  agenda (basic-cli 0.23.0, pinned shared)
+
+ seq         at  crossing
+   1    +0.00ms  hosted_file_read_utf8(UnixBytes("tasks.txt")) -> Ok("00:01 Early thing\n16:11 Submit essay draft\n23:59 Late thing\n")
+   2    +0.22ms  hosted_utc_now() -> Ok(1791821462439960000)  # 2026-10-12T16:11:02.439960Z
+   3    +0.30ms  hosted_stdout_line("Agenda at 2026-10-12T16:11:02Z") -> Ok({})
+   4    +0.37ms  hosted_stdout_line("00:01  Early thing  done") -> Ok({})
+ end             no main! span: the request never finished, or its supervisor was killed
+[ledger] line 5: torn
+exit 0
+
+[16:12:12] elsewhere/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/damage.py no-exe crash.ledger noexe.ledger 
+exit 0
+
+[16:12:12] elsewhere/$ env -i ROC_LEDGER=dump:noexe.ledger crash.ledger/exe 
+[ledger] no pinned binary, so nothing here can decode the payloads
+exit 66
+
+[16:12:12] elsewhere/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/damage.py no-spans crash.ledger nospans.ledger 
+exit 0
+
+[16:12:12] elsewhere/$ env -i ROC_LEDGER=dump:nospans.ledger nospans.ledger/exe 
+[ledger] no spans.jsonl
+exit 66
+
+[16:12:13] elsewhere/$ env -i ROC_LEDGER=dump:mvp1.ledger mvp1.ledger/exe 
+[ledger] ROC_LEDGER must be record:<dir> or replay:<dir>
+exit 64
+
+[16:12:13] elsewhere/$ env -i ROC_LEDGER=replay:mvp1.ledger mvp1.ledger/exe 
+Agenda at 2026-10-07T19:07:45Z
+09:00  Standup  done
+[ROC CRASHED] Integer subtraction overflowed
+[ledger] reproduced: crashed: Integer subtraction overflowed after 4 crossings
+exit 0

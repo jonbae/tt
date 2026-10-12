@@ -1,0 +1,29 @@
+
+[17:00:38] user/$ python3 /Users/jonathanbae/repos/tt/.scratch/effect-ledger/prototype-supervisor-wiring/drive.py wait:Name\?\,send:Ann\,wait:Age\?\,ctrlc -- env ROC_LEDGER=record:ledgers/ctrlc.ledger ./two-questions 
+Name?
+Ann
+Age?
+^C[ledger] recorded killed by SIGINT during seq 4 (hosted_stdin_line) (shared) -> ledgers/ctrlc.ledger
+<< shell sees: killed by SIGINT >>
+exit 0
+
+[17:00:39] elsewhere/$ env -i ROC_LEDGER=replay:ctrlc.ledger ctrlc.ledger/exe 
+Name?
+Age?
+[ledger] reproduced: killed by SIGINT during seq 4 (hosted_stdin_line) after 3 crossings
+exit 0
+
+[17:00:39] elsewhere/$ env -i ROC_LEDGER=dump:ctrlc.ledger ctrlc.ledger/exe 
+ledger   ctrlc.ledger
+request  80765d1902ce5c3a31914947c822d987
+service  two-questions (basic-cli 0.23.0, pinned shared)
+args     ["./two-questions"]
+started  2026-10-12T17:00:38.757204Z
+
+ seq         at  crossing
+   1  +304.42ms  hosted_stdout_line("Name?") -> Ok({})
+   2  +304.56ms  hosted_stdin_line() -> Ok("Ann")
+   3  +304.62ms  hosted_stdout_line("Age?") -> Ok({})
+   4             hosted_stdin_line() -> no response: SIGINT
+ end  +304.80ms  killed by SIGINT during seq 4 (hosted_stdin_line)
+exit 0

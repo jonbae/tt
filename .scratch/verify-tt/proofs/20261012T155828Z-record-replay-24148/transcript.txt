@@ -1,0 +1,63 @@
+
+[15:58:36] user/$ env ROC_LEDGER=record:ledgers/crash.ledger ./agenda tasks.txt 
+Agenda at 2026-10-12T15:58:37Z
+00:01  Early thing  done
+[ROC CRASHED] Integer subtraction overflowed
+[ledger] recorded crashed: Integer subtraction overflowed (shared) -> ledgers/crash.ledger
+exit 1
+
+[15:59:00] user/$ ./agenda tasks.txt 
+Agenda at 2026-10-12T15:59:00Z
+00:01  Early thing  done
+15:58  Submit essay draft  done
+23:59  Late thing  in 480 min
+exit 0
+
+[15:59:04] elsewhere/$ ls -A 
+crash.ledger
+exit 0
+
+[15:59:04] elsewhere/$ env -i ROC_LEDGER=replay:crash.ledger crash.ledger/exe 
+Agenda at 2026-10-12T15:58:37Z
+00:01  Early thing  done
+[ROC CRASHED] Integer subtraction overflowed
+[ledger] reproduced: crashed: Integer subtraction overflowed after 4 crossings
+exit 0
+
+[15:59:10] user/$ env ROC_LEDGER=record:ledgers/fine.ledger ./agenda fine.txt 
+Agenda at 2026-10-12T15:59:10Z
+00:01  Early thing  done
+23:59  Late thing  in 479 min
+[ledger] recorded returned 0 (shared) -> ledgers/fine.ledger
+exit 0
+
+[15:59:10] elsewhere/$ env -i ROC_LEDGER=replay:fine.ledger fine.ledger/exe 
+Agenda at 2026-10-12T15:59:10Z
+00:01  Early thing  done
+23:59  Late thing  in 479 min
+[ledger] reproduced: returned 0 after 5 crossings
+exit 0
+
+[15:59:10] user/$ env ROC_LEDGER=replay:ledgers/fine.ledger ./two-questions 
+Agenda at 2026-10-12T15:59:10Z
+00:01  Early thing  done
+23:59  Late thing  in 479 min
+[ledger] reproduced: returned 0 after 5 crossings
+exit 0
+
+[15:59:10] user/$ env ROC_LEDGER_DIR=/Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T155828Z-record-replay-24148/user/.ledgers bash -c .\ \"\$1\"\;\ ledgered\ ./agenda\ fine.txt\;\ ledgered\ ./agenda\ fine.txt _ /Users/jonathanbae/repos/tt/.scratch/effect-ledger/prototype-supervisor-wiring/ledger-on.sh 
+Agenda at 2026-10-12T15:59:10Z
+00:01  Early thing  done
+23:59  Late thing  in 479 min
+[ledger] recorded returned 0 (shared) -> /Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T155828Z-record-replay-24148/user/.ledgers/agenda-20261012T155910Z-24899-2661.ledger
+Agenda at 2026-10-12T15:59:10Z
+00:01  Early thing  done
+23:59  Late thing  in 479 min
+[ledger] recorded returned 0 (shared) -> /Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T155828Z-record-replay-24148/user/.ledgers/agenda-20261012T155910Z-24899-1960.ledger
+exit 0
+
+[15:59:10] user/$ stat -f %l\ %N .ledgers/agenda-20261012T155910Z-24899-1960.ledger/exe .ledgers/agenda-20261012T155910Z-24899-2661.ledger/exe .ledgers/.pins/1000006-2784c1b-b9670-6acd03a7.12972a6 
+3 .ledgers/agenda-20261012T155910Z-24899-1960.ledger/exe
+3 .ledgers/agenda-20261012T155910Z-24899-2661.ledger/exe
+3 .ledgers/.pins/1000006-2784c1b-b9670-6acd03a7.12972a6
+exit 0

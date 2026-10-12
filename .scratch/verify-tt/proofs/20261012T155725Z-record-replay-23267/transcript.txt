@@ -1,0 +1,5 @@
+
+[15:57:34] user/$ env ROC_LEDGER=record:ledgers/crash.ledger ./agenda tasks.txt 
+Program exited with error: PathErr(NotFound, Path.unix("tasks.txt"))
+[ledger] recorded returned 1 (shared) -> ledgers/crash.ledger
+exit 1

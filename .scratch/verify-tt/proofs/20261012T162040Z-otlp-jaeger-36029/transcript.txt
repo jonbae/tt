@@ -1,0 +1,63 @@
+
+[16:20:47] user/$ env ROC_LEDGER=record:ledgers/crash.ledger ./agenda tasks.txt 
+Agenda at 2026-10-12T16:20:48Z
+00:01  Early thing  done
+[ROC CRASHED] Integer subtraction overflowed
+[ledger] recorded crashed: Integer subtraction overflowed (shared) -> ledgers/crash.ledger
+exit 1
+
+[16:20:48] user/$ env ROC_LEDGER=record:ledgers/fine.ledger ./agenda fine.txt 
+Agenda at 2026-10-12T16:20:48Z
+00:01  Early thing  done
+23:59  Late thing  in 458 min
+[ledger] recorded returned 0 (shared) -> ledgers/fine.ledger
+exit 0
+
+[16:20:48] user/$ python3 /Users/jonathanbae/repos/tt/.scratch/effect-ledger/prototype-supervisor-wiring/drive.py wait:Name\?\,send:Ann\,wait:Age\?\,ctrlc -- env ROC_LEDGER=record:ledgers/ctrlc.ledger ./two-questions 
+Name?
+Ann
+Age?
+^C[ledger] recorded killed by SIGINT during seq 4 (hosted_stdin_line) (shared) -> ledgers/ctrlc.ledger
+<< shell sees: killed by SIGINT >>
+exit 0
+
+[16:20:52] user/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/jaeger-up.sh /Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T162040Z-otlp-jaeger-36029 
+jaeger-up: verify-tt-20261012T162040Z-otlp-jaeger-36029 never answered on 127.0.0.1:50092
+exit 1
+
+[16:22:38] user/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/jaeger-up.sh /Users/jonathanbae/repos/tt/.scratch/verify-tt/proofs/20261012T162040Z-otlp-jaeger-36029 
+OTLP=127.0.0.1:50169
+UI=127.0.0.1:50170
+container verify-tt-20261012T162040Z-otlp-jaeger-36029
+exit 0
+
+[16:22:45] elsewhere/$ env OTLP_ENDPOINT=http://127.0.0.1:50169 /Users/jonathanbae/repos/tt/.scratch/effect-ledger/prototype-supervisor-wiring/otlp-send.sh crash.ledger fine.ledger ctrlc.ledger 
+crash.ledger: sent 5 lines, 0 rejected
+fine.ledger: sent 6 lines, 0 rejected
+ctrlc.ledger: sent 4 lines, 0 rejected
+exit 0
+
+[16:22:45] elsewhere/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/jaeger-traces.sh 127.0.0.1:50170 crash.ledger fine.ledger ctrlc.ledger 
+crash: trace 8cbcd20364277a928aa7d8c6bdfea783, traces 1, spans 5, roots 1, error=True, status='crashed: Integer subtraction overflowed'
+fine: trace d9faf05a72f86692431222b69adc72b6, traces 1, spans 6, roots 1, error=False, status='ok'
+ctrlc: trace 132bb99980b1e3a3b3f1601800511278, traces 1, spans 4, roots 1, error=True, status='killed by SIGINT during seq 4 (hosted_stdin_line)'
+exit 0
+
+[16:22:53] user/$ env ROC_LEDGER=record:ledgers/spare.ledger ./agenda fine.txt 
+Agenda at 2026-10-12T16:22:53Z
+00:01  Early thing  done
+23:59  Late thing  in 456 min
+[ledger] recorded returned 0 (shared) -> ledgers/spare.ledger
+exit 0
+
+[16:22:53] elsewhere/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/damage.py torn spare.ledger torn.ledger 
+exit 0
+
+[16:22:53] elsewhere/$ env OTLP_ENDPOINT=http://127.0.0.1:50169 /Users/jonathanbae/repos/tt/.scratch/effect-ledger/prototype-supervisor-wiring/otlp-send.sh torn.ledger 
+  line 6: HTTP 400
+torn.ledger: sent 6 lines, 1 rejected
+exit 0
+
+[16:22:53] elsewhere/$ /Users/jonathanbae/repos/tt/.claude/skills/verify-tt/scripts/jaeger-traces.sh 127.0.0.1:50170 fine.ledger/ 
+fine: trace d9faf05a72f86692431222b69adc72b6, traces 1, spans 6, roots 1, error=False, status='ok'
+exit 0
