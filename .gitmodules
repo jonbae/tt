@@ -1,3 +1,3 @@
 [submodule ".scratch/effect-ledger/prototype-supervisor-wiring/basic-cli"]
 	path = .scratch/effect-ledger/prototype-supervisor-wiring/basic-cli
-	url = https://github.com/roc-lang/basic-cli
+	url = https://github.com/jonbae/basic-cli.git
