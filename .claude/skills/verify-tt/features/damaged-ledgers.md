@@ -8,6 +8,10 @@ A developer replays a ledger that was cut short, truncated or edited. Replay ref
 - `refuse-no-root` refuses a ledger with no `main!` span.
 - `refuse-gap` refuses a ledger with a missing sequence number.
 - `refuse-alien` refuses a ledger that names a hosted function outside the boundary.
+- `refuse-no-seq` refuses a line that is valid JSON but has no `ledger.seq`.
+- `refuse-bad-b64` refuses a crossing whose request isn't base64.
+- `refuse-bad-args` refuses a root whose request doesn't decode as process args.
+- `refuse-bad-outcome` refuses a root whose response is JSON but not an outcome.
 - `refuse-no-exe` refuses a ledger with no pinned binary.
 - `refuse-no-spans` refuses a ledger with no `spans.jsonl`.
 - `divergence-mismatch` stops a replay at a crossing whose recorded request differs from the replayed one.
@@ -39,6 +43,10 @@ Preconditions:
   | `no-root` | `[ledger] refused: incomplete: no main! span` | 65 |
   | `gap` | `[ledger] refused: gap or duplicate at seq 3` | 65 |
   | `alien` | `[ledger] refused: seq 1 names hosted_file_delete, which is outside the boundary` | 65 |
+  | `no-seq` | `[ledger] refused: line 1: not a ledger span` | 65 |
+  | `bad-b64` | `[ledger] refused: line 1: not a ledger span` | 65 |
+  | `bad-args` | `[ledger] refused: line 6: not a ledger span` | 65 |
+  | `bad-outcome` | `[ledger] refused: line 6: not a ledger span` | 65 |
   | `no-exe` | `[ledger] refused: incomplete: no pinned binary` | 65 |
   | `no-spans` | `[ledger] refused: no spans.jsonl` | 65 |
   | `tamper` | `[ledger] divergence: Mismatch at seq 1 (hosted_stdout_line)`, then `recorded: hosted_stdout_line "TAMPERED"` and `replayed: hosted_stdout_line "Name?"` | 70 |
@@ -54,6 +62,7 @@ Preconditions:
 ## Gotchas
 
 - Every divergence also prints `[ledger]   ledger: <dir>` and `This is a bug in the effect ledger: the pinned build replayed its own recording differently.` The message assumes the file wasn't edited by hand. Quote it verbatim.
-- The exact numbers depend on the source ledger. `torn line 6`, `gap … at seq 3`, `Extra at seq 5` and `Missing at seq 6` hold for the six-line `happy.ledger`. A different source shifts them, so record what printed.
+- The exact numbers depend on the source ledger. `torn line 6`, `line 6: not a ledger span`, `gap … at seq 3`, `Extra at seq 5` and `Missing at seq 6` hold for the six-line `happy.ledger`. A different source shifts them, so record what printed.
 - Every damaged copy must come from a real recording made in this proof. Writing `spans.jsonl` from scratch tests the fixture, not the ledger.
+- Every damaged ledger ends in a refusal (65) or a divergence (70). An abort (exit 134, `panicked at src/ledger_prototype.rs`) is a bug in the replayer, not a verdict on the ledger.
 - `damage.py` refuses an existing destination, so pick a new name for each attempt.
