@@ -11,7 +11,7 @@ Asset for [What do the supervisor and its child say to each other?](../issues/10
 | `basic-cli/src/lib.rs` | `rust_main` dispatch; wrappers for `hosted_stdout_line`, `hosted_stdin_line`, and `hosted_stderr_line` (`main_for_host!` reports an `Err` through it); `roc_crashed`/`roc_expect_failed` hooks |
 | `app/two_questions.roc` | the app: "Name?", "Age?" |
 | `drive.py` | pty driver: Ctrl-C is byte `0x03` on a real pty, so SIGINT hits the whole foreground process group |
-| `ledgers/` | the ledgers the scenarios below produced |
+| `ledgers/` | the scenarios' ledgers, re-recorded 2026-10-13 with the MVP 3 host so `dump` can read them; the originals are in git at `80aedb0` |
 
 ## Run
 
