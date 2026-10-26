@@ -4,16 +4,17 @@ This directory is the maintained source for verifying what a developer sees when
 
 ## Baseline preconditions
 
-- `"$S/doctor.sh"` is all ok, and the host isn't stale.
-- `PROOF=$("$S/new-proof.sh" <feature-id>)` made a fresh proof dir with `agenda` and `two-questions` built into `$PROOF/user/`, and `"$S/doctor.sh" "$PROOF"` is all ok.
+- `"$S/doctor.sh"` is all ok, and neither host is stale.
+- `PROOF=$("$S/new-proof.sh" <feature-id>)` made a fresh proof dir with `agenda`, `two-questions` and `agenda-server` built into `$PROOF/user/`, and `"$S/doctor.sh" "$PROOF"` is all ok.
 - Every shell call starts with `. <proof dir>/env.sh`.
-- Drive only binaries and ledgers inside your own proof dir. The ledgers in `effect-ledger-demo/` and `$PROTO/ledgers/` belong to the user, so copy them into `$PROOF/elsewhere/` before using one.
+- Drive only binaries and ledgers inside your own proof dir. The ledgers in `$PROTO/demo/` belong to the user, so copy them into `$PROOF/elsewhere/` before using one.
 
 ## Driving conventions
 
 - Run every command through `tx`, from `$PROOF/user` (the world) or `$PROOF/elsewhere` (the world taken away).
 - Pass environment variables through `env` so the transcript shows them. Replays in `elsewhere/` run under `env -i`.
-- Give each ledger a name that's new within the proof, because recording refuses an existing directory.
+- Give each ledger a name that's new within the proof. Recording into an existing ledger adds an instance to it, which is a feature of its own, not a fresh recording.
+- Run a replay or dump through any instance's pinned binary, `<dir>/*/exe`. With one instance, the glob names exactly one file.
 - Drive interactive requests with `$PROTO/drive.py` through a real pty, and read the app's end from its `<< shell sees: … >>` line.
 - Treat the `[ledger] …` lines as the ledger's verdict on itself, and the app's output as what happened. Leave whether the app's output is right to the developer.
 
@@ -36,7 +37,9 @@ Each feature file starts with an H1 title and one paragraph describing the devel
 
 ## Features
 
-- [Record and replay](./record-replay.md) covers recording a request, the control, replaying with the world taken away, always-on recording and shared pins.
+Only [Record and replay](./record-replay.md) has been re-proved against the effect-ledger library. The other four were written against MVP 3, before instances, so their quoted output is out of date: the verdict lines now name the entry and request (`[ledger] reproduced main! <request>: …`), each ledger file sits one directory down in its instance, and `ledger-on.sh` and `otlp-send.sh` no longer exist. Re-prove a recipe before trusting its quoted lines, and update it from the transcript. `$PROTO/prove.sh` covers Ctrl-C, damaged ledgers and dump on both platforms, so read its checks for the current wording.
+
+- [Record and replay](./record-replay.md) covers recording a request, the control, replaying with the world taken away, adding an instance with a shared pin, and one server request.
 - [Interactive requests and signals](./interactive-and-signals.md) covers stdin through a pty, Ctrl-C, Ctrl-D, SIGTERM and interrupted replays.
 - [Damaged ledgers](./damaged-ledgers.md) covers refusals (65), divergence (70), and records into an existing directory (73).
 - [Dump](./dump.md) covers reading what a request did from its ledger alone, including damaged and pre-dump ledgers.

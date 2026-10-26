@@ -38,4 +38,4 @@ Preconditions:
 - Ledgers recorded before MVP 3 can't be dumped, by design: the reader is the pinned binary. Exit 64 on such a ledger isn't a regression.
 - `dump` never truncates, so a big file read floods the transcript. Keep demo inputs small.
 - The first `at` value is about +290 ms on a fresh pin and about +5 ms on a reused one. That's macOS's first-exec cost, not a regression.
-- `effect-ledger-demo/` belongs to the user. Copy from it and dump the copy.
+- `$PROTO/demo/` belongs to the user. Copy from it and dump the copy.

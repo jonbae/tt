@@ -23,7 +23,7 @@ if [ -f "$proof/jaeger.container" ]; then
 fi
 
 # Scratch: the proof's own app builds. Each ledger keeps its pinned copy.
-rm -f "$proof/user/agenda" "$proof/user/two-questions"
+for spec in $APPS; do rm -f "$proof/user/${spec%%:*}"; done
 
 # The evidence must survive.
 fail=0
@@ -31,10 +31,14 @@ fail=0
 [ -s "$proof/build.txt" ] || { echo "MISSING  $proof/build.txt"; fail=1; }
 echo "evidence kept in $proof:"
 echo "  transcript.txt  $(grep -cE '^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ' "$proof/transcript.txt" 2>/dev/null || echo 0) commands"
+# A ledger holds one directory per instance, each with its own spans and pin.
 for l in $(find "$proof" -name '*.ledger' -type d | sort); do
-	spans=$([ -f "$l/spans.jsonl" ] && echo "$(wc -l <"$l/spans.jsonl" | tr -d ' ') lines" || echo none)
-	exe=$([ -x "$l/exe" ] && echo pinned || echo none)
-	echo "  ${l#"$proof"/}  spans.jsonl: $spans, exe: $exe"
+	for i in "$l"/*/; do
+		[ -e "$i/spans.jsonl" ] || [ -e "$i/exe" ] || continue
+		spans=$([ -f "$i/spans.jsonl" ] && echo "$(wc -l <"$i/spans.jsonl" | tr -d ' ') lines" || echo none)
+		exe=$([ -x "$i/exe" ] && echo pinned || echo none)
+		echo "  ${i#"$proof"/}  spans.jsonl: $spans, exe: $exe"
+	done
 done
 for f in $(find "$proof" -maxdepth 3 -type f \( -name '*.txt' -o -name '*.json' \) ! -name transcript.txt ! -name build.txt | sort); do
 	echo "  ${f#"$proof"/}"
