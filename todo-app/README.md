@@ -26,10 +26,12 @@ Recording into the same ledger again adds an instance. `ROC_LEDGER_REQUEST=<requ
 
 ## Prove
 
-`./prove.sh` records one session (add two todos, toggle one, delete one, load the page) against a real database. It then copies only the ledger elsewhere, replays it with no database, and prints one line per claim. Each run leaves its transcript and ledgers in `proofs/`.
+`./prove.sh` records one session (add two todos, toggle one, delete one, load the page) against a real database. It then copies only the ledger elsewhere, replays it with no database, and prints one line per claim. Each run leaves its transcript and ledgers in `proofs/`. It checks that:
 
-Today the ledger covers only stdout, stderr, the clock, sleep and file reads, so the replay doesn't reproduce the session:
+- every request reproduces, and the last page replays alone, byte for byte
+- replay never opens a database
+- `dump` shows the SQL the session ran and the rows SQLite returned
+- a changed SQLite row changes the page, so replay reports a divergence
+- a crossing recorded on a different handle (`init!#9` for `init!#1`) diverges
 
-- A form POST aborts in replay, because its body read isn't ledgered and gets the stand-in body box.
-- SQLite runs for real against a fresh `todos.db`, so `GET /` renders an empty list.
-- A toggle or delete reports `reproduced` even though its SQL hit the replay's database, because a 303 looks the same either way.
+The SQLite handles in a dump are named by the crossing that created them: `init!#1` is the database `init!` opened, and `respond!#3` is the statement seq 3 of that request prepared.

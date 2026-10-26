@@ -9,10 +9,12 @@
 //!    before it, [`Request::leave`] after it.
 //! 3. Every hosted function: [`cross`], then either the recorded response
 //!    ([`Cross::Replay`]) or the real call followed by [`Cross::record`].
+//!    One that takes or returns a host resource names it with [`handle`].
 //!
 //! Switch: `ROC_LEDGER=record:<dir>`, `replay:<dir>` or `dump:<dir>`. Replay
 //! takes `ROC_LEDGER_REQUEST=<trace id prefix>` to pick one request.
 
+pub mod handle;
 mod instance;
 mod outcome;
 mod otlp;
@@ -144,6 +146,7 @@ struct Link {
 #[derive(Clone, Copy)]
 struct Current {
     rid: u64,
+    entry: &'static str,
     seq: u64,
 }
 
@@ -180,6 +183,11 @@ fn current_rid() -> u64 {
     CURRENT.with(|c| c.get()).map_or(0, |c| c.rid)
 }
 
+/// The entry and sequence number of the crossing this thread is making.
+fn current_crossing() -> Option<(&'static str, u64)> {
+    CURRENT.with(|c| c.get()).map(|c| (c.entry, c.seq))
+}
+
 fn send(frame: Frame) {
     let Some(link) = LINK.get() else { return };
     let mut w = link.to_sup.lock().unwrap_or_else(|p| p.into_inner());
@@ -208,7 +216,7 @@ pub fn enter(entry: &'static str, request: impl FnOnce() -> Vec<u8>) -> Request 
     let Some(link) = LINK.get().filter(|l| !l.replaying) else { return Request(None) };
     let rid = link.next_rid.fetch_add(1, Ordering::SeqCst);
     send(Frame::Enter { rid, entry: entry.to_string(), request: request() });
-    CURRENT.with(|c| c.set(Some(Current { rid, seq: 0 })));
+    CURRENT.with(|c| c.set(Some(Current { rid, entry, seq: 0 })));
     Request(Some(rid))
 }
 
@@ -242,7 +250,7 @@ pub fn cross(symbol: &'static str, request: impl FnOnce() -> Vec<u8>) -> Cross {
     };
     current.seq += 1;
     CURRENT.with(|c| c.set(Some(current)));
-    let Current { rid, seq } = current;
+    let Current { rid, seq, .. } = current;
     send(Frame::Begin { rid, seq, symbol: symbol.to_string(), request: request() });
     if !link.replaying {
         return Cross::Record { rid, seq };
@@ -286,7 +294,7 @@ pub fn serve_replay() -> i32 {
     loop {
         let Some(Frame::Run { rid, entry, request }) = receive() else { return 0 };
         let e = boundary().entry(&entry).unwrap_or_else(|| die(70, &format!("no entry {entry}")));
-        CURRENT.with(|c| c.set(Some(Current { rid, seq: 0 })));
+        CURRENT.with(|c| c.set(Some(Current { rid, entry: e.name, seq: 0 })));
         let response = (e.replay)(&request);
         send(Frame::Leave { rid, response });
         CURRENT.with(|c| c.set(None));

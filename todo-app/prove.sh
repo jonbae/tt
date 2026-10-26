@@ -2,7 +2,7 @@
 # Dogfood the effect ledger on todo-app: record one session against a real
 # SQLite database, take the world away, and replay it.
 #
-#   ./prove.sh            # builds ./todo-app first if main.roc is newer
+#   ./prove.sh            # rebuilds ./todo-app first if main.roc or the host is newer
 #
 # Leaves proofs/<UTC>-<pid>/ with transcript.txt, user/ (the world and its
 # ledger) and elsewhere/ (a ledger copy replayed with no database), and prints
@@ -46,10 +46,45 @@ refute() {
 	fi
 }
 
-if [ ! -x "$here/todo-app" ] || [ "$here/main.roc" -nt "$here/todo-app" ]; then
+host=$here/../record-replay/basic-webserver/platform/targets/x64mac/libhost.a
+if [ ! -x "$here/todo-app" ] || [ "$here/main.roc" -nt "$here/todo-app" ] || [ "$host" -nt "$here/todo-app" ]; then
 	(cd "$here" && "$roc" build main.roc --output=todo-app) || exit 1
 fi
 cp "$here/todo-app" "$proof/user/"
+
+# request <ledger> <exe> <dump row text>: the id of the first request whose
+# dump row holds <text>.
+request() {
+	env -i ROC_LEDGER=dump:"$1" "$2" | awk -v t="$3" 'index($0, t) {print $3; exit}'
+}
+
+# rewrite <ledger> <request> <symbol> <request|response> <old> <new>: in the
+# first <symbol> crossing of <request>, replace the string <old> with <new>.
+# Like damage.py, it edits a copy on purpose, to show what replay catches.
+rewrite() {
+	python3 - "$@" <<-'EOF'
+	import base64, glob, json, struct, sys
+	ledger, request, symbol, which, old, new = sys.argv[1:]
+	path = glob.glob(ledger + "/*/spans.jsonl")[0]
+	lines = open(path).read().splitlines()
+	encoded = lambda s: struct.pack("<I", len(s.encode())) + s.encode()
+	for i, line in enumerate(lines):
+	    v = json.loads(line)
+	    span = v["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+	    if span["traceId"].startswith(request) and span["name"] == symbol:
+	        for a in span["attributes"]:
+	            if a["key"] != "ledger." + which:
+	                continue
+	            payload = base64.b64decode(a["value"]["stringValue"])
+	            if encoded(old) in payload:
+	                a["value"]["stringValue"] = base64.b64encode(payload.replace(encoded(old), encoded(new), 1)).decode()
+	                lines[i] = json.dumps(v)
+	                open(path, "w").write("\n".join(lines) + "\n")
+	                print(f"{symbol} {which} in {request}: {old!r} -> {new!r}")
+	                sys.exit(0)
+	sys.exit(f"no {symbol} {which} in {request} holds {old!r}")
+	EOF
+}
 
 # post <path> [form]: one form POST, as the page's buttons send it.
 post() {
@@ -93,10 +128,23 @@ refute "no request diverges" "divergence"
 tx ls -A
 refute "replay never opens a database" "todos.db"
 
-get=$(env -i ROC_LEDGER=dump:todo.ledger "$exe" | awk '/begin  respond!\(GET \/,/ {print $3; exit}')
+get=$(request todo.ledger "$exe" "begin  respond!(GET /,")
 tx env -i ROC_LEDGER=replay:todo.ledger ROC_LEDGER_REQUEST="$get" "$exe"
 check "the last page replays alone, byte for byte" 0 "$(printf '%s' "$page" | head -c 200 | sed 's/"/\\"/g')"
+
+echo "== what replay catches"
+cp -R todo.ledger row.ledger
+tx rewrite row.ledger "$get" hosted_sqlite_next_row response "buy milk" "buy oat milk"
+tx env -i ROC_LEDGER=replay:row.ledger ROC_LEDGER_REQUEST="$get" "$(ls -d row.ledger/*/exe)"
+check "a changed SQLite row changes the page: divergence" 70 "Mismatch at seq 0 (respond!)"
+
+toggle=$(request todo.ledger "$exe" "begin  respond!(POST /todos/1/toggle,")
+cp -R todo.ledger handle.ledger
+tx rewrite handle.ledger "$toggle" hosted_sqlite_prepare request "init!#1" "init!#9"
+tx env -i ROC_LEDGER=replay:handle.ledger ROC_LEDGER_REQUEST="$toggle" "$(ls -d handle.ledger/*/exe)"
+check "a crossing on another handle diverges" 70 "Mismatch at seq 2 (hosted_sqlite_prepare)"
 
 echo
 echo "== proof: $proof"
 printf '%s\n' "${results[@]}" | tee -a "$log"
+! printf '%s\n' "${results[@]}" | grep -q '^FAIL'
