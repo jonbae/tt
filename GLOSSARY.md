@@ -36,6 +36,10 @@ _Avoid_: Log line, trace event, record
 The append-only sequence of ledger entries for a running application.
 _Avoid_: Audit log, event log, trace store
 
+**Instance**:
+One process of the application, from start to exit. A crash ends an instance and a restart begins a new one. An effect ledger holds every instance of its application, each with its own pinned binary, and every request belongs to exactly one instance.
+_Avoid_: App id, process (on its own), boot, run
+
 **Pinned binary**:
 The copy of the executable that recorded an effect ledger, kept with the ledger. The recording runs from this copy, and replay only ever runs the pinned binary.
 _Avoid_: Pin (on its own), snapshot, build hash
