@@ -14,3 +14,4 @@
 /todo-app/todo-app
 /todo-app/todos.db*
 /todo-app/*.ledger/
+/todo-app/proofs/
