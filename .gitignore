@@ -1,7 +1,17 @@
+.DS_Store
+/.scratch/
 
-/.scratch/effect-ledger/issues
-/.scratch/effect-ledger/research
-/.scratch/effect-ledger/HANDOFF.md
-/.scratch/effect-ledger/map.md
-/.scratch/effect-ledger/prototype-spec-skeleton.md
-/.scratch/effect-ledger/prototype-supervisor-wiring/roc-nightly/
+/record-replay/roc-nightly/
+/record-replay/docs/
+/record-replay/proofs/
+/record-replay/demo/
+/record-replay/effect-ledger/target/
+/record-replay/examples/agenda
+/record-replay/examples/agenda-server
+/record-replay/examples/two-questions
+/record-replay/examples/tasks.txt
+
+/todo-app/todo-app
+/todo-app/todos.db*
+/todo-app/*.ledger/
+/todo-app/proofs/

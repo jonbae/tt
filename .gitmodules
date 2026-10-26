@@ -1,3 +1,8 @@
-[submodule ".scratch/effect-ledger/prototype-supervisor-wiring/basic-cli"]
-	path = .scratch/effect-ledger/prototype-supervisor-wiring/basic-cli
+[submodule "record-replay/basic-cli"]
+	path = record-replay/basic-cli
 	url = https://github.com/jonbae/basic-cli.git
+	branch = prototype/ledger-library
+[submodule "record-replay/basic-webserver"]
+	path = record-replay/basic-webserver
+	url = https://github.com/jonbae/basic-webserver.git
+	branch = prototype/ledger-library

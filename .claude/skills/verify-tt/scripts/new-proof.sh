@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Make a proof dir and build both demo apps into its user/ against the current
-# host. Prints only the proof dir; the build log goes to <proof>/build.txt.
+# Make a proof dir and build the demo apps into its user/ against the current
+# hosts. Prints only the proof dir; the build log goes to <proof>/build.txt.
 #
 #   PROOF=$(new-proof.sh <feature-id>)
 set -u
@@ -14,19 +14,25 @@ fi
 proof=$PROOFS/$(date -u +%Y%m%dT%H%M%SZ)-$feature-$$
 mkdir -p "$proof/user" "$proof/elsewhere"
 touch "$proof/.verify-tt-proof"
+built=1
 {
-	echo "proof      $proof"
-	echo "made       $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-	echo "roc        $("$ROC" version)"
-	echo "basic-cli  $(git -C "$PROTO/basic-cli" rev-parse --short HEAD) on $(git -C "$PROTO/basic-cli" branch --show-current), uncommitted:"
-	git -C "$PROTO/basic-cli" status --short | sed 's/^/             /'
-	echo "host       $(shasum -a 256 "$HOST_LIB" | cut -c1-16)  $HOST_LIB"
-	cd "$PROTO/app" &&
-		"$ROC" build agenda.roc --output="$proof/user/agenda" &&
-		"$ROC" build two_questions.roc --output="$proof/user/two-questions" &&
-		shasum -a 256 "$proof/user/agenda" "$proof/user/two-questions"
-} >"$proof/build.txt" 2>&1
-if [ ! -x "$proof/user/agenda" ] || [ ! -x "$proof/user/two-questions" ]; then
+	echo "proof          $proof"
+	echo "made           $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+	echo "effect-ledger  $(cd "$PROTO/effect-ledger" && shasum -a 256 src/*.rs | shasum -a 256 | cut -c1-16) (src)"
+	for p in $PLATFORMS; do
+		echo "$p $(git -C "$PROTO/$p" rev-parse --short HEAD), roc $("$(roc_for "$p")" version), uncommitted:"
+		git -C "$PROTO/$p" status --short | sed 's/^/    /'
+		echo "    host $(shasum -a 256 "$(host_lib "$p")" | cut -c1-16)"
+	done
+	cd "$PROTO/examples" || exit 1
+	for spec in $APPS; do
+		IFS=: read -r app src platform <<<"$spec"
+		"$(roc_for "$platform")" build "$src" --output="$proof/user/$app" || exit 1
+	done
+	shasum -a 256 "$proof"/user/*
+} >"$proof/build.txt" 2>&1 || built=0
+for spec in $APPS; do [ -x "$proof/user/${spec%%:*}" ] || built=0; done
+if [ $built = 0 ]; then
 	cat "$proof/build.txt" >&2
 	echo "new-proof: the app build failed; see above" >&2
 	exit 1
